@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<!--	This is the syntax for an HTML comment -->
+<!--	always remember to set the DOCTYPE before even a line break
+		or a comment
+-->
+
+<html lang="en">
+<head>
+	<!--
+		title is what shows up in the browser title bar
+		Javascript can access the title, so we can have it change to:
+		'You win' or whatever dynamically.
+	-->
+
+	<title>Flatland</title>
+	<!-- Date: 2010-05-24 -->
+	<style>
+	/* 	The border around the canvas gets set here.
+		This will set a border around every canvas element in the document.
+		Using border instead of outline
+		because it needs to start outside the boundry of the canvas.
+		Also, this is the comment syntax for css (no //)
+	*/
+	canvas{border:solid black 0px; position:relative; left:50%; margin-left:-250px; width:500px;margin-top:10px;}
+	form{margin: 20px auto; width:200px; border:solid black 3px;padding:10px;}
+	</style>
+
+	<!--
+		the placement of script in the document is kind of complex
+		I don't fully understand it, but in general best bet is in the <head>
+	-->
+
+	<script>
+	var NUM_OF_COLORS = 506;
+	
+	var radius = 150;
+	var sides = 3;
+	var lineWidth = 50;
+	var frameRate = 60;
+
+	var secondsPerRotation = 15;
+	var fogPercent = 50;
+	
+	
+	var angle = 0;
+	var canvasSize = 500;
+	
+	var yOffset = -20;
+	var center = canvasSize/2;
+
+	var sideViewY = canvasSize -(lineWidth);
+	
+	var maxPosiY = radius + center;
+	var minPosiY = -radius + center;
+	
+	var yRange = 2*radius;
+	
+	
+	
+	var colorMultiplier = (NUM_OF_COLORS*(fogPercent/100))/yRange;
+	
+	
+	
+
+	
+	function colorOfY(y)
+	{
+		return 256 - Math.round((y - minPosiY) * colorMultiplier);
+	}
+	
+
+	function go()
+	{
+		var value = document.getElementById('sides').value;
+		if(value != "" && value > 0)
+			sides = parseInt(document.getElementById('sides').value);
+		
+		var pointX = new Array();
+		var pointY = new Array();
+		var maxX = Number.MIN_VALUE;
+		var minX = Number.MAX_VALUE;
+		var maxY = Number.MIN_VALUE;
+		var minY = Number.MAX_VALUE;
+		var maxVertice;
+		var minVertice;
+
+
+		canvas = document.getElementById('myCan');
+
+
+		ctx = canvas.getContext('2d');
+
+		var x = radius * Math.cos(angle);
+		var y = radius * Math.sin(angle);
+
+
+
+	
+
+		ctx.lineWidth = lineWidth;
+		ctx.fillStyle = "black";
+		ctx.lineJoin = "miter";
+		ctx.lineCap = "butt";
+		ctx.strokeStyle = "black";
+		
+		
+
+		ctx.clearRect(0,0,canvasSize,canvasSize);
+
+		for(i = 0; i < sides; i++)
+		{
+
+			var newAngle = angle + (Math.PI/sides*2)*(i+1);
+
+			pointX[i] = radius * Math.cos(newAngle) + center;
+			pointY[i] = radius * Math.sin(newAngle) + center;
+			if ((pointX[i] > maxX) || ((pointX[i] == maxX) && pointY[i] > maxY)) {
+				maxX = pointX[i];
+
+				maxY = pointY[i];
+				maxVertice = i;
+			}
+
+
+			if ((pointX[i] < minX) || ((pointX[i] == minX) && pointY[i] > maxY)) {
+				minX = pointX[i];
+
+				minY = pointY[i];
+				minVertice = i;
+			}
+		}
+		ctx.beginPath();
+		ctx.moveTo(x+center,y+center + yOffset);
+		
+		
+		for(i = 0; i < sides; i++)
+		{
+			
+			ctx.lineTo(pointX[i], pointY[i]-20);
+		}
+		
+		ctx.closePath();
+		ctx.stroke();
+		i = maxVertice;
+		
+		var lastX = 0;
+		var lastY = 0;
+		ctx.beginPath();
+		do
+		{
+			
+			if(i == maxVertice)
+			{	ctx.moveTo(pointX[i], sideViewY);
+				lastX = pointX[i];
+				lastY = pointY[i];
+			}
+				
+			else
+			{
+				var gradient = ctx.createLinearGradient(lastX, sideViewY, pointX[i], sideViewY);
+				//gradient.addColorStop(0, "white");
+				//gradient.addColorStop(1, "black");
+				gradient.addColorStop(0, "rgb(" + colorOfY(lastY) + "," + colorOfY(lastY) + "," + colorOfY(lastY) +")");
+				gradient.addColorStop(1, "rgb(" + colorOfY(pointY[i]) + "," + colorOfY(pointY[i]) + "," + colorOfY(pointY[i]) +")");
+				//ctx.strokeStyle = "rgb(" + colorOfY(pointY[i]) + "," + colorOfY(pointY[i]) + "," + colorOfY(pointY[i]) +")";
+				ctx.fillStyle = gradient;
+				ctx.fillRect(lastX, sideViewY, (pointX[i] - lastX -1), lineWidth);
+				//ctx.lineTo(pointX[i], sideViewY);
+				ctx.stroke();
+				ctx.closePath();
+				ctx.beginPath();
+				ctx.moveTo(pointX[i], sideViewY);
+				lastX = pointX[i];
+				lastY = pointY[i];
+			}
+
+			//ctx.fillStyle = "rgb(" + colorOfY(pointY[i]) + "," + colorOfY(pointY[i]) + "," + colorOfY(pointY[i]) +")";
+			//ctx.fillRect(pointX[i] - lineWidth/2,canvasSize - sideViewY , lineWidth, lineWidth);
+			i = ++i % sides;
+		} while (i != (minVertice + 1) % sides);
+		ctx.closePath();
+		ctx.stroke();
+
+		//  Advances the angle by whatever amount we want
+		angle += 2*Math.PI/(secondsPerRotation*frameRate);
+
+		// In 10 milliseconds, call go() again.
+		// go will return before it gets called again.
+		// this should probably be setInterval in an init function
+		
+		setTimeout('go()', 1000/frameRate);
+	}
+
+	</script>
+</head>
+
+<!-- onload is one of the events an element can use to fire javascript -->
+<body onload='go()'>
+
+	<!--	width and height set the dimension of the canvas
+			and also its default style, but it can be resized with css
+			This won't effect the coordinates of the canvas internally,
+			just the amount of space it takes up in the document.
+
+			You can use css to stretch and transform the canvas,
+			which is how we'll do the flip up thing ( I think ).
+	-->
+<canvas id='myCan' width='500' height='500'></canvas>
+<form>
+Sides:
+<input id='sides' value = "3" type="text"/>
+</form>
+<p id='sideValue'></p>
+</body>
+</html>
